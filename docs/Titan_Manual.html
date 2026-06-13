@@ -100,24 +100,13 @@ h4[id^="api-"]{scroll-margin-top:20px;border-top:1px solid var(--border);padding
 
 <span class="tok-fn">FetchContent_Declare</span>(
     Titan
-    GIT_REPOSITORY https:<span class="tok-com">//github.com/your-org/titan.git</span>
+    GIT_REPOSITORY https://github.com/HannesW101/Titan
     GIT_TAG        v1.0.0        # pin to a released version
 )
 <span class="tok-fn">FetchContent_MakeAvailable</span>(Titan)
 
 <span class="tok-fn">add_executable</span>(MyGame main.cpp)
-<span class="tok-fn">target_link_libraries</span>(MyGame PRIVATE Titan::Titan)</code></pre><div class="callout note"><div class="lbl">One-time note for CMake 4+</div><p>Titan's msgpack dependency predates CMake 4's minimum-version policy. If you build with CMake 4 or newer and hit a policy error from a fetched dependency, configure once with <code>-DCMAKE_POLICY_VERSION_MINIMUM=3.5</code>. This affects the third-party dependency only, not your own project.</p></div><h3 id="gittag">Pinning a version with GIT_TAG</h3>
-<p><code>GIT_TAG</code> tells FetchContent exactly which commit of Titan to fetch — the same mechanism SFML, nlohmann/json, and toml++ use. Pin a release tag for reproducible builds:</p>
-<table>
-<tr><th>GIT_TAG value</th><th>What you get</th><th>When to use</th></tr>
-<tr><td><code>v1.0.0</code> (a tag)</td><td>A fixed, reproducible release</td><td><b>Recommended</b> for real projects</td></tr>
-<tr><td><code>main</code> (a branch)</td><td>The latest commit on that branch</td><td>Testing / latest features</td></tr>
-<tr><td>a commit SHA</td><td>One exact commit</td><td>Maximum reproducibility</td></tr>
-</table>
-<p>To publish a taggable release of Titan so consumers can pin it:</p>
-<pre><code><span class="tok-fn">git</span> tag -a v1.0.0 -m <span class="tok-str">"Titan 1.0.0"</span>
-<span class="tok-fn">git</span> push origin v1.0.0</code></pre>
-<p>Consumers then set <code>GIT_TAG v1.0.0</code>. To upgrade, bump the tag and re-run CMake. Pinning a tag (not <code>main</code>) keeps your build from changing under you when Titan moves on.</p>
+<span class="tok-fn">target_link_libraries</span>(MyGame PRIVATE Titan::Titan)</code></pre><div class="callout note"><div class="lbl">One-time note for CMake 4+</div><p>Titan's msgpack dependency predates CMake 4's minimum-version policy. If you build with CMake 4 or newer and hit a policy error from a fetched dependency, configure once with <code>-DCMAKE_POLICY_VERSION_MINIMUM=3.5</code>. This affects the third-party dependency only, not your own project.</p></div>
 
 <h3 id="deps">Dependencies &amp; system packages</h3>
 <p>Fetched automatically at configure time, pinned to these versions:</p>
