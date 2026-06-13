@@ -907,5 +907,5 @@ overlay.toggle();                      // e.g. bound to F3
 
 ## 10. Further reading
 
-The complete API reference lives in `Titan Engine — docs/Library_Overview.md`.
-The worked gameplay example lives in `Titan Engine — docs/Examples.md`.
+The complete API reference lives in [Library_Overview.md](Library_Overview.md).
+The worked gameplay example lives in [Examples.md](Examples.md).
