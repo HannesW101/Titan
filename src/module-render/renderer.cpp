@@ -31,6 +31,10 @@ Renderer::Renderer(sf::RenderWindow& window)
         sf::Vector2f{
             static_cast<float>(window.getSize().x),
             static_cast<float>(window.getSize().y)
+            },
+        sf::Vector2f{
+            static_cast<float>(window.getSize().x / 2),
+            static_cast<float>(window.getSize().y / 2)
             }
         )
     , _layer_cameras{}
