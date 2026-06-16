@@ -59,9 +59,13 @@ render::Renderer&            UI_manager::renderer()         { return _renderer; 
 resources::Resource_manager& UI_manager::resource_manager() { return _rm; }
 sf::Vector2f                 UI_manager::mouse_position() const { return _mouse_pos; }
 
+float UI_manager::ui_scale() const { return _ui_scale; }
+void  UI_manager::set_reference_height(float h) { _ref_height = h; }
+
 void UI_manager::layout() {
     auto const& window = _renderer.window();
     sf::Vector2u const sz = window.getSize();
+    _ui_scale = static_cast<float>(sz.y) / _ref_height;
     sf::FloatRect const screen({ 0.0f, 0.0f },
         { static_cast<float>(sz.x), static_cast<float>(sz.y) });
     _root->_rect = screen;

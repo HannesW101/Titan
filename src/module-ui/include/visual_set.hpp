@@ -29,8 +29,10 @@ namespace titan::ui {
  */
 struct Text_appearance {
     std::string font_name;               ///< Resource_manager key, empty = "default_font"
-    float       size       = 14.0f;
-    sf::Color   color      = sf::Color::White;
+    float       size              = 14.0f;
+    sf::Color   color             = sf::Color::White;
+    sf::Color   outline_color     = sf::Color::Transparent;
+    float       outline_thickness = 0.0f;
 };
 
 // ============================================================================

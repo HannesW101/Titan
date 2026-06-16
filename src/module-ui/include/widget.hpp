@@ -392,6 +392,10 @@ protected:
      */
     Draw_buffer& draw_buffer();
 
+    /// Returns the active UI scale factor (window_height / reference_height).
+    /// Safe to call even when not yet attached to a manager (returns 1.0).
+    float px_scale() const;
+
     /// Draw the resolved background visual for the current state into `dst`.
     /**
      * @brief Draw background.

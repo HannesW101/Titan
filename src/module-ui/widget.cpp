@@ -99,11 +99,16 @@ UI_anchor    Widget::anchor() const  { return _anchor; }
 sf::Vector2f Widget::offset() const  { return _offset; }
 sf::FloatRect Widget::rect() const   { return _rect; }
 
+float Widget::px_scale() const {
+    return _ui_manager ? _ui_manager->ui_scale() : 1.0f;
+}
+
 sf::FloatRect Widget::inner_rect() const {
+    float const s = px_scale();
     return sf::FloatRect(
-        { _rect.position.x + _pad.left, _rect.position.y + _pad.top },
-        { _rect.size.x - _pad.left - _pad.right,
-          _rect.size.y - _pad.top  - _pad.bottom }
+        { _rect.position.x + _pad.left * s, _rect.position.y + _pad.top * s },
+        { _rect.size.x - (_pad.left + _pad.right) * s,
+          _rect.size.y - (_pad.top  + _pad.bottom) * s }
     );
 }
 
@@ -253,8 +258,9 @@ void Widget::enable_click_events() {
 
 void Widget::_resolve_anchor(sf::FloatRect const& parent) {
 
-    float const w = _width.resolve(parent.size.x);
-    float const h = _height.resolve(parent.size.y);
+    float const s = px_scale();
+    float const w = _width.resolve(parent.size.x, s);
+    float const h = _height.resolve(parent.size.y, s);
 
     sf::Vector2f base = parent.position;
     switch (_anchor) {
@@ -291,15 +297,18 @@ void Widget::_resolve_anchor(sf::FloatRect const& parent) {
     }
 
     _rect = sf::FloatRect(
-        { base.x + _offset.x - origin.x, base.y + _offset.y - origin.y },
+        { base.x + _offset.x * s - origin.x, base.y + _offset.y * s - origin.y },
         { w, h }
     );
 }
 
 void Widget::_arrange_children() {
 
+    float const s = px_scale();
+
     if (_layout_mode == Layout_mode::NONE) {
-        for (auto const& c : _children) { c->do_layout(_rect); }
+        sf::FloatRect const in = inner_rect();
+        for (auto const& c : _children) { c->do_layout(in); }
         return;
     }
 
@@ -309,32 +318,32 @@ void Widget::_arrange_children() {
     if (_layout_mode == Layout_mode::HORIZONTAL) {
         for (auto const& c : _children) {
             if (!c->_visible) { continue; }
-            float const cw = c->_width.resolve(in.size.x);
-            float const ch = c->_height.resolve(in.size.y);
-            c->_rect = sf::FloatRect({ x, y + c->_offset.y }, { cw, ch });
+            float const cw = c->_width.resolve(in.size.x, s);
+            float const ch = c->_height.resolve(in.size.y, s);
+            c->_rect = sf::FloatRect({ x, y + c->_offset.y * s }, { cw, ch });
             c->_arrange_children();
-            x += cw + _spacing;
+            x += cw + _spacing * s;
         }
     } else if (_layout_mode == Layout_mode::VERTICAL) {
         for (auto const& c : _children) {
             if (!c->_visible) { continue; }
-            float const cw = c->_width.resolve(in.size.x);
-            float const ch = c->_height.resolve(in.size.y);
-            c->_rect = sf::FloatRect({ x + c->_offset.x, y }, { cw, ch });
+            float const cw = c->_width.resolve(in.size.x, s);
+            float const ch = c->_height.resolve(in.size.y, s);
+            c->_rect = sf::FloatRect({ x + c->_offset.x * s, y }, { cw, ch });
             c->_arrange_children();
-            y += ch + _spacing;
+            y += ch + _spacing * s;
         }
     } else { // GRID
         std::size_t col = 0u; float row_h = 0.0f; float cx = in.position.x, cy = in.position.y;
         for (auto const& c : _children) {
             if (!c->_visible) { continue; }
-            float const cw = c->_width.resolve(in.size.x);
-            float const ch = c->_height.resolve(in.size.y);
+            float const cw = c->_width.resolve(in.size.x, s);
+            float const ch = c->_height.resolve(in.size.y, s);
             c->_rect = sf::FloatRect({ cx, cy }, { cw, ch });
             c->_arrange_children();
-            cx += cw + _spacing;
+            cx += cw + _spacing * s;
             row_h = std::max(row_h, ch);
-            if (++col >= _grid_columns) { col = 0u; cx = in.position.x; cy += row_h + _spacing; row_h = 0.0f; }
+            if (++col >= _grid_columns) { col = 0u; cx = in.position.x; cy += row_h + _spacing * s; row_h = 0.0f; }
         }
     }
 }
@@ -400,7 +409,8 @@ void Widget::draw_text(
         font = resource_manager().get<sf::Font>(ta.font_name.empty() ? "default_font" : ta.font_name);
     } catch (std::exception const&) { return; }
 
-    sf::Text t(*font, text, static_cast<unsigned int>(ta.size));
+    float const s = px_scale();
+    sf::Text t(*font, text, static_cast<unsigned int>(ta.size * s));
     t.setFillColor(ta.color);
     sf::FloatRect const tb = t.getLocalBounds();
 

@@ -158,6 +158,19 @@ public:
      */
     void end_drag();
 
+    // Scale
+    /**
+     * @brief Get the current UI scale factor (window_height / reference_height).
+     * @return The scale
+     */
+    float ui_scale() const;
+    /**
+     * @brief Set the reference height used to compute the UI scale.
+     *        Defaults to 1080. Set before the first layout call.
+     * @param h Reference height in pixels
+     */
+    void  set_reference_height(float h);
+
     // Frame
     /**
      * @brief Layout.
@@ -185,6 +198,9 @@ private:
     std::unique_ptr<Widget>      _root;
     Widget*                      _focused = nullptr;
     sf::Vector2f                 _mouse_pos = { 0.0f, 0.0f };
+
+    float        _ui_scale   = 1.0f;
+    float        _ref_height = 1080.0f;
 
     bool         _dragging = false;
     std::int64_t _drag_kind = 0;

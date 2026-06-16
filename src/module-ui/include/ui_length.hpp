@@ -38,8 +38,8 @@ struct UI_length {
         return { fraction, Type::PERCENT };
     }
 
-    [[nodiscard]] constexpr float resolve(float const parent_dim) const {
-        return (type == Type::PIXELS) ? value : value * parent_dim;
+    [[nodiscard]] constexpr float resolve(float const parent_dim, float const px_scale = 1.0f) const {
+        return (type == Type::PIXELS) ? value * px_scale : value * parent_dim;
     }
 };
 

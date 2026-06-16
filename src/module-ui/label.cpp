@@ -36,7 +36,8 @@ void Label::on_render(render::Renderer& renderer) {
 
     sf::FloatRect const r = rect();
     render::Render_layer const layer = on_overlay() ? render::Render_layer::UI_OVERLAY : render::Render_layer::UI;
-    unsigned int const csize = static_cast<unsigned int>(ta.size);
+    float const s = px_scale();
+    unsigned int const csize = static_cast<unsigned int>(ta.size * s);
 
     std::vector<std::string> lines;
     if (_wrap) {
@@ -58,6 +59,8 @@ void Label::on_render(render::Renderer& renderer) {
     for (auto const& line : lines) {
         sf::Text t(*font, line, csize);
         t.setFillColor(ta.color);
+        t.setOutlineColor(ta.outline_color);
+        t.setOutlineThickness(ta.outline_thickness * s);
         sf::FloatRect const tb = t.getLocalBounds();
         float x = r.position.x;
         switch (_align) {
