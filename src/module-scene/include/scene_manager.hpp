@@ -108,6 +108,21 @@ public:
      */
     void clear();
 
+    /**
+     * @brief Replace the entire stack with a scene, bridged by a fade-to-black.
+     *
+     * Fades out over @p fade_seconds, swaps the scene at full-black (so
+     * expensive on_enter() is hidden), then fades back in.
+     * @param scene Scene to transition to
+     * @param fade_seconds Duration of each half (fade-out + fade-in)
+     */
+    void replace_with_fade(std::unique_ptr<Scene> scene, float fade_seconds = 0.35f);
+
+    /**
+     * @brief Current black-overlay opacity in [0, 1]. 0 = transparent, 1 = fully black.
+     */
+    float fade_alpha() const;
+
     // ---- Per-frame (driven by Application) ----------------------------------
 
     /**
@@ -149,7 +164,8 @@ public:
     bool empty() const;
 
 private:
-    enum class Op : std::uint8_t { PUSH, POP, REPLACE, CLEAR };
+    enum class Op         : std::uint8_t { PUSH, POP, REPLACE, CLEAR };
+    enum class Fade_phase : std::uint8_t { NONE, OUT, IN };
 
     /**
      * @brief A queued transition operation.
@@ -176,9 +192,19 @@ private:
      */
     void _flush_resources();
 
+    /**
+     * @brief Clear stack and enter new scene (shared by REPLACE op and fade transition).
+     */
+    void _do_replace(std::unique_ptr<Scene> scene);
+
     app::Application*                   _app = nullptr;
     std::vector<std::unique_ptr<Scene>> _stack;
     std::vector<Pending>                _pending;
+
+    Fade_phase             _fade_phase         = Fade_phase::NONE;
+    float                  _fade_duration      = 0.35f;
+    float                  _fade_elapsed       = 0.0f;
+    std::unique_ptr<Scene> _fade_pending_scene;
 };
 
 } // namespace titan::scene

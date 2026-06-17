@@ -6,6 +6,11 @@
 
 #include "module-app/include/application.hpp"
 #include "module-resources/include/resource_manager.hpp"
+#include "module-render/include/renderer.hpp"
+#include "module-render/include/render_layer.hpp"
+
+#include "SFML/Graphics/RectangleShape.hpp"
+#include "SFML/Graphics/Color.hpp"
 
 #include <utility>
 
@@ -70,6 +75,27 @@ void Scene_manager::replace(
 }
 
 // ----------------------------------------------------------------------------
+void Scene_manager::replace_with_fade(
+    std::unique_ptr<Scene> scene,
+    float                  fade_seconds
+    ) {
+
+    _fade_pending_scene = std::move(scene);
+    _fade_duration      = fade_seconds;
+    _fade_elapsed       = 0.0f;
+    _fade_phase         = Fade_phase::OUT;
+}
+
+// ----------------------------------------------------------------------------
+float Scene_manager::fade_alpha() const {
+
+    if (_fade_phase == Fade_phase::NONE) { return 0.0f; }
+    float t = (_fade_duration > 0.0f) ? (_fade_elapsed / _fade_duration) : 1.0f;
+    if (t > 1.0f) { t = 1.0f; }
+    return (_fade_phase == Fade_phase::OUT) ? t : (1.0f - t);
+}
+
+// ----------------------------------------------------------------------------
 void Scene_manager::clear() {
 
     _pending.push_back({ Op::CLEAR, nullptr });
@@ -78,6 +104,21 @@ void Scene_manager::clear() {
 // ============================================================================
 // Apply deferred transitions
 // ============================================================================
+
+// ----------------------------------------------------------------------------
+void Scene_manager::_do_replace(
+    std::unique_ptr<Scene> scene
+    ) {
+
+    while (!_stack.empty()) {
+        _stack.back()->on_exit();
+        _stack.pop_back();
+    }
+    _flush_resources();
+    _attach_scene(*scene);
+    _stack.push_back(std::move(scene));
+    _stack.back()->on_enter();
+}
 
 // ----------------------------------------------------------------------------
 void Scene_manager::_apply_pending() {
@@ -112,14 +153,7 @@ void Scene_manager::_apply_pending() {
             }
 
             case Op::REPLACE: {
-                while (!_stack.empty()) {
-                    _stack.back()->on_exit();
-                    _stack.pop_back();
-                }
-                _flush_resources();
-                _attach_scene(*p.scene);
-                _stack.push_back(std::move(p.scene));
-                _stack.back()->on_enter();
+                _do_replace(std::move(p.scene));
                 break;
             }
 
@@ -172,6 +206,25 @@ void Scene_manager::update(
     // Apply any transitions requested last frame, before running update logic.
     _apply_pending();
 
+    // Advance fade-transition timer.
+    if (_fade_phase != Fade_phase::NONE) {
+
+        _fade_elapsed += dt;
+
+        if (_fade_elapsed >= _fade_duration) {
+
+            if (_fade_phase == Fade_phase::OUT) {
+                // Fully black — swap the scene, then start fading in.
+                _do_replace(std::move(_fade_pending_scene));
+                _fade_elapsed = 0.0f;
+                _fade_phase   = Fade_phase::IN;
+            } else {
+                // Fade-in complete.
+                _fade_phase = Fade_phase::NONE;
+            }
+        }
+    }
+
     if (_stack.empty()) { return; }
 
     std::size_t start = _stack.size();
@@ -208,6 +261,19 @@ void Scene_manager::render(
     for (std::size_t i = start; i < _stack.size(); ++i) {
 
         _stack[i]->render(renderer);
+    }
+
+    // Draw fullscreen black rect during fade transitions.
+    if (_fade_phase != Fade_phase::NONE) {
+
+        sf::Vector2u const sz = renderer.window().getSize();
+        sf::RectangleShape fade_rect(sf::Vector2f{
+            static_cast<float>(sz.x),
+            static_cast<float>(sz.y)
+        });
+        std::uint8_t const alpha = static_cast<std::uint8_t>(fade_alpha() * 255.0f);
+        fade_rect.setFillColor(sf::Color(0, 0, 0, alpha));
+        renderer.submit(render::Render_layer::UI_OVERLAY, fade_rect);
     }
 }
 
