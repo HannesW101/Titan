@@ -412,6 +412,8 @@ void Widget::draw_text(
     float const s = px_scale();
     sf::Text t(*font, text, static_cast<unsigned int>(ta.size * s));
     t.setFillColor(ta.color);
+    t.setOutlineColor(ta.outline_color);
+    t.setOutlineThickness(ta.outline_thickness * s);
     sf::FloatRect const tb = t.getLocalBounds();
 
     float x = dst.position.x;
