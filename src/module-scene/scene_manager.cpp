@@ -8,7 +8,6 @@
 #include "module-resources/include/resource_manager.hpp"
 #include "module-render/include/renderer.hpp"
 
-#include "SFML/Graphics/RectangleShape.hpp"
 #include "SFML/Graphics/Color.hpp"
 
 #include <utility>
@@ -262,22 +261,17 @@ void Scene_manager::render(
         _stack[i]->render(renderer);
     }
 
-    // Draw fullscreen black rect during fade transitions.
-    // Drawn directly to the window (not through the submit queue) so lifetime
-    // is not an issue and it always lands on top of all queued layers.
+    // Submit fullscreen black rect during fade transitions.
+    // _fade_rect is a member so it stays alive until end_frame() flushes UI_OVERLAY
+    // (which renders after all other layers, so the fade always lands on top).
     if (_fade_phase != Fade_phase::NONE) {
 
         sf::Vector2u const sz = renderer.window().getSize();
-        sf::RectangleShape fade_rect(sf::Vector2f{
-            static_cast<float>(sz.x),
-            static_cast<float>(sz.y)
-        });
+        _fade_rect.setSize(sf::Vector2f{static_cast<float>(sz.x), static_cast<float>(sz.y)});
+        _fade_rect.setPosition(sf::Vector2f{0.0f, 0.0f});
         std::uint8_t const alpha = static_cast<std::uint8_t>(fade_alpha() * 255.0f);
-        fade_rect.setFillColor(sf::Color(0, 0, 0, alpha));
-
-        // Reset to default view so the rect covers the full window in screen space.
-        renderer.window().setView(renderer.window().getDefaultView());
-        renderer.window().draw(fade_rect);
+        _fade_rect.setFillColor(sf::Color(0, 0, 0, alpha));
+        renderer.submit(render::Render_layer::UI_OVERLAY, _fade_rect);
     }
 }
 

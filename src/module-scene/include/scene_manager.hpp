@@ -6,6 +6,8 @@
 
 #include "module-scene/include/scene.hpp"
 
+#include "SFML/Graphics/RectangleShape.hpp"
+
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -205,6 +207,7 @@ private:
     float                  _fade_duration      = 0.35f;
     float                  _fade_elapsed       = 0.0f;
     std::unique_ptr<Scene> _fade_pending_scene;
+    sf::RectangleShape     _fade_rect;
 };
 
 } // namespace titan::scene
