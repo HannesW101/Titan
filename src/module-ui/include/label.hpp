@@ -7,6 +7,7 @@
 #include "module-ui/include/widget.hpp"
 
 #include <string>
+#include <vector>
 
 // ============================================================================
 // Namespaces
@@ -48,22 +49,22 @@ public:
      */
     void set_wrap(bool wrap);
 
+    float content_height() const override;
+
 protected:
-    /**
-     * @brief Handle the render event.
-     * @param renderer renderer
-     */
+    void on_layout() override;
     void on_render(render::Renderer& renderer) override;
-    /**
-     * @brief Get the theme style key for this widget.
-     * @return Style key string
-     */
     std::string style_key() const override { return "label"; }
 
 private:
-    std::string _text;
-    Text_align  _align = Text_align::LEFT;
-    bool        _wrap  = false;
+    void _build_lines(sf::Font const& font, unsigned int csize, float wrap_width);
+
+    std::string              _text;
+    Text_align               _align = Text_align::LEFT;
+    bool                     _wrap  = false;
+    std::vector<std::string> _lines;
+    float                    _cached_width = -1.0f;
+    std::string              _cached_text;
 };
 
 } // namespace titan::ui

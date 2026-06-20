@@ -307,8 +307,7 @@ void Widget::_arrange_children() {
     float const s = px_scale();
 
     if (_layout_mode == Layout_mode::NONE) {
-        sf::FloatRect const in = inner_rect();
-        for (auto const& c : _children) { c->do_layout(in); }
+        on_arrange_none_children(inner_rect());
         return;
     }
 
@@ -377,8 +376,9 @@ void Widget::render(render::Renderer& renderer) {
         draw_background(renderer, _rect);
     }
     on_render(renderer);
-
+    on_pre_child_render(renderer);
     for (auto const& c : _children) { c->render(renderer); }
+    on_post_child_render(renderer);
 }
 
 // ============================================================================

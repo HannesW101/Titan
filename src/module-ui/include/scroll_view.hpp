@@ -66,7 +66,10 @@ protected:
      * @brief Handle the render event.
      * @param renderer renderer
      */
+    void on_arrange_none_children(sf::FloatRect const& inner) override;
     void on_render(render::Renderer& renderer) override;
+    void on_pre_child_render(render::Renderer& renderer) override;
+    void on_post_child_render(render::Renderer& renderer) override;
     /**
      * @brief Get the theme style key for this widget.
      * @return Style key string

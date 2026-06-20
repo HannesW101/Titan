@@ -72,7 +72,11 @@ void Renderer::submit(
     ) {
 
     auto const idx = static_cast<std::uint8_t>(layer);
-    _queues[idx].push_back({&drawable, states, sort_key});
+    Command cmd;
+    cmd.drawable = &drawable;
+    cmd.states   = states;
+    cmd.sort_key = sort_key;
+    _queues[idx].push_back(cmd);
 }
 
 // ----------------------------------------------------------------------------
@@ -114,6 +118,28 @@ Camera* Renderer::layer_camera(
     ) {
 
     return _layer_cameras[static_cast<std::uint8_t>(layer)];
+}
+
+// ----------------------------------------------------------------------------
+void Renderer::push_clip(Render_layer layer, sf::FloatRect const& world_rect) {
+    auto const idx = static_cast<std::uint8_t>(layer);
+    auto const ws  = sf::Vector2f(_window.getSize());
+    sf::FloatRect norm{
+        {world_rect.position.x / ws.x, world_rect.position.y / ws.y},
+        {world_rect.size.x     / ws.x, world_rect.size.y     / ws.y}
+    };
+    Command cmd;
+    cmd.type    = Command::Type::SCISSOR_PUSH;
+    cmd.scissor = norm;
+    _queues[idx].push_back(cmd);
+}
+
+// ----------------------------------------------------------------------------
+void Renderer::pop_clip(Render_layer layer) {
+    auto const idx = static_cast<std::uint8_t>(layer);
+    Command cmd;
+    cmd.type = Command::Type::SCISSOR_POP;
+    _queues[idx].push_back(cmd);
 }
 
 // ----------------------------------------------------------------------------
@@ -199,8 +225,16 @@ void Renderer::_flush_layer(
     // Draw all commands
     for (auto const& cmd : queue) {
 
-        _window.draw(*cmd.drawable, cmd.states);
-        ++_last_draw_calls;
+        if (cmd.type == Command::Type::SCISSOR_PUSH) {
+            sf::View v = camera ? camera->view() : _window.getDefaultView();
+            v.setScissor(cmd.scissor);
+            _window.setView(v);
+        } else if (cmd.type == Command::Type::SCISSOR_POP) {
+            _window.setView(camera ? camera->view() : _window.getDefaultView());
+        } else {
+            _window.draw(*cmd.drawable, cmd.states);
+            ++_last_draw_calls;
+        }
     }
 }
 

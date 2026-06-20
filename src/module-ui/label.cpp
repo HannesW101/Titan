@@ -22,10 +22,58 @@
 namespace titan::ui {
 
 Label::Label(std::string const& name) : Widget(name) {}
-void Label::set_text(std::string const& t) { _text = t; }
+
+float Label::content_height() const {
+    if (!_wrap || _lines.empty()) { return rect().size.y; }
+    Text_appearance const& ta = resolved_text_style();
+    return static_cast<float>(_lines.size()) * ta.size * 1.9f;
+}
+
+void Label::set_text(std::string const& t) { _text = t; _cached_text = ""; }
 std::string const& Label::text() const { return _text; }
 void Label::set_align(Text_align a) { _align = a; }
 void Label::set_wrap(bool w) { _wrap = w; }
+
+void Label::_build_lines(sf::Font const& font, unsigned int csize, float wrap_width) {
+    _lines.clear();
+    // Split on explicit newlines first, then word-wrap each paragraph.
+    std::istringstream par_stream(_text);
+    std::string paragraph;
+    while (std::getline(par_stream, paragraph)) {
+        if (paragraph.empty()) { _lines.push_back(""); continue; }
+        std::istringstream word_stream(paragraph);
+        std::string word, line;
+        while (word_stream >> word) {
+            std::string test = line.empty() ? word : line + " " + word;
+            sf::Text probe(font, test, csize);
+            if (probe.getLocalBounds().size.x > wrap_width && !line.empty()) {
+                _lines.push_back(line);
+                line = word;
+            } else {
+                line = test;
+            }
+        }
+        if (!line.empty()) { _lines.push_back(line); }
+    }
+}
+
+void Label::on_layout() {
+    if (!_wrap) { return; }
+    float const w = rect().size.x;
+    if (w == _cached_width && _text == _cached_text) { return; }
+    _cached_width = w;
+    _cached_text  = _text;
+
+    Text_appearance const& ta = resolved_text_style();
+    std::shared_ptr<sf::Font> font;
+    try { font = resource_manager().get<sf::Font>(ta.font_name.empty() ? "default_font" : ta.font_name); }
+    catch (...) { return; }
+
+    float const s = px_scale();
+    unsigned int const csize = static_cast<unsigned int>(ta.size * s);
+    float const wrap_w = w - ta.outline_thickness * 2.0f * s;
+    _build_lines(*font, csize, wrap_w > 0.0f ? wrap_w : w);
+}
 
 void Label::on_render(render::Renderer& renderer) {
     if (_text.empty()) { return; }
@@ -39,24 +87,18 @@ void Label::on_render(render::Renderer& renderer) {
     float const s = px_scale();
     unsigned int const csize = static_cast<unsigned int>(ta.size * s);
 
-    std::vector<std::string> lines;
-    if (_wrap) {
-        std::istringstream iss(_text); std::string word, line;
-        while (iss >> word) {
-            std::string test = line.empty() ? word : line + " " + word;
-            sf::Text probe(*font, test, csize);
-            if (probe.getLocalBounds().size.x > r.size.x && !line.empty()) { lines.push_back(line); line = word; }
-            else { line = test; }
-        }
-        if (!line.empty()) { lines.push_back(line); }
-    } else {
-        std::istringstream iss(_text); std::string line;
-        while (std::getline(iss, line)) { lines.push_back(line); }
+    // Use cached wrapped lines or split on newlines for non-wrap mode.
+    std::vector<std::string> fresh;
+    std::vector<std::string> const* lines_ptr = &_lines;
+    if (!_wrap) {
+        std::istringstream iss(_text); std::string ln;
+        while (std::getline(iss, ln)) { fresh.push_back(ln); }
+        lines_ptr = &fresh;
     }
 
-    float const line_h = ta.size * 1.25f;
+    float const line_h = ta.size * 1.9f;
     float y = r.position.y;
-    for (auto const& line : lines) {
+    for (auto const& line : *lines_ptr) {
         sf::Text t(*font, line, csize);
         t.setFillColor(ta.color);
         t.setOutlineColor(ta.outline_color);

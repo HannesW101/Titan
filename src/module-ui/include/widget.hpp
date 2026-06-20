@@ -198,6 +198,14 @@ public:
      */
     sf::FloatRect inner_rect() const;
 
+    /**
+     * @brief Actual rendered content height. Widgets whose visible content is
+     *        shorter than their rect (e.g. Label with few lines) should override
+     *        this so Scroll_view knows the true scrollable range.
+     * @return Height in world-space pixels of the actual content.
+     */
+    virtual float content_height() const { return rect().size.y; }
+
     // -------------------------------------------------------------------------
     // Appearance overrides (per-widget, on top of Theme defaults)
     // -------------------------------------------------------------------------
@@ -372,6 +380,22 @@ protected:
      * @param renderer renderer
      */
     virtual void on_render(render::Renderer& renderer) { (void)renderer; }
+
+    /** Called just before children are rendered. Override to push a clip rect. */
+    virtual void on_pre_child_render(render::Renderer& renderer) { (void)renderer; }
+    /** Called just after children are rendered. Override to pop a clip rect. */
+    virtual void on_post_child_render(render::Renderer& renderer) { (void)renderer; }
+
+    /**
+     * @brief Called by _arrange_children() for NONE-layout widgets to lay out
+     *        their children. Override to apply a scroll offset or other transform
+     *        instead of a plain inner_rect() pass. Default: do_layout(inner) for
+     *        each child.
+     * @param inner The widget's inner rect in world space.
+     */
+    virtual void on_arrange_none_children(sf::FloatRect const& inner) {
+        for (auto const& c : _children) { c->do_layout(inner); }
+    }
 
     /// Theme key for default styling (e.g. "button", "label"). Empty = none.
     virtual std::string style_key() const { return {}; }

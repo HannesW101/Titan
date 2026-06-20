@@ -64,6 +64,20 @@ public:
         float sort_key = 0.0f
         );
 
+    /**
+     * @brief Push a scissor clip rect. All subsequent draws on this layer are
+     *        clipped to world_rect until the matching pop_clip.
+     * @param layer      Render layer to clip
+     * @param world_rect Clip rect in UI world space (pixels at 1× scale)
+     */
+    void push_clip(Render_layer layer, sf::FloatRect const& world_rect);
+
+    /**
+     * @brief Pop the scissor clip rect pushed by push_clip.
+     * @param layer Render layer to restore
+     */
+    void pop_clip(Render_layer layer);
+
     // -------------------------------------------------------------------------
     // Cameras
     // -------------------------------------------------------------------------
@@ -148,10 +162,12 @@ private:
     void _flush_layer(Render_layer const layer);
 
     struct Command {
-
-        sf::Drawable const* drawable;   ///< Non-owning pointer
-        sf::RenderStates    states;
-        float               sort_key;
+        enum class Type : std::uint8_t { DRAW, SCISSOR_PUSH, SCISSOR_POP };
+        Type             type     = Type::DRAW;
+        sf::Drawable const* drawable = nullptr;
+        sf::RenderStates states   = {};
+        float            sort_key = 0.0f;
+        sf::FloatRect    scissor  = {};  ///< normalized [0..1], SCISSOR_PUSH only
     };
 
     sf::RenderWindow& _window;
